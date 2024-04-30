@@ -1,8 +1,10 @@
 <template>
     <div>
-        <div class="flex flex-grow justify-between mx-5 my-3">
-            <h3 class="mx-5 my-3 font-extrabold text-lg font-sans">Inventory</h3>
-            <div class="flex flex-grow justify-end mx-5 my-3">
+        <!-- -------------------------=-Menu------------------------- -->
+        <div class="flex flex-col justify-between mx-5 my-3">
+            <!-- Search and filter -->
+            <div class="flex flex-grow justify-center md:justify-start mx-5 my-3">
+                <!-- Add product button -->
                 <a-tooltip placement="top" class="mr-2">
                     <template #title>
                         <span>Form Add new product</span>
@@ -12,201 +14,174 @@
                         <PlusSquareOutlined />
                     </a-button>
                 </a-tooltip>
-
-                <!-- Add new product form -->
-                <a-modal v-model:open="openAddProduct" title="Add new product">
-                    <a-form :model="formState" :label-col="labelCol" :wrapper-col="wrapperCol">
-                        <a-form-item label="Product name">
-                            <a-input v-model:value="formState.productName" />
-                        </a-form-item>
-
-                        <a-form-item label="Category">
-                            <a-select ref="select" v-model:value="formState.category" style="width: 120px"
-                                :options="categoryOptions" @change="">
-                            </a-select>
-                        </a-form-item>
-
-                        <a-form-item label="Price">
-                            <a-input-number class="w-60" v-model:value="formState.price" :controls="false" :min="0" />
-                        </a-form-item>
-
-                        <a-form-item label="Image">
-                            <a-upload v-model:file-list="fileList" list-type="picture" :max-count="1">
-                                <a-button>
-                                    <upload-outlined></upload-outlined>
-                                    Upload
-                                </a-button>
-                            </a-upload>
-                        </a-form-item>
-
-                    </a-form>
-                    <template #footer>
-                        <a-button key="back" @click="openAddProduct = false">Close</a-button>
-                        <a-button key="submit" type="primary" @click="handleAddProduct">Add</a-button>
-                    </template>
-                </a-modal>
-
-                <a-tooltip placement="top" class="mr-2">
-                    <template #title>
-                        <span>Add product quantity</span>
-                    </template>
-                    <a-button class="text-white font-semibold text-medium bg-green-400"
-                        @click="openImportProduct = true">
-                        Import
-                        <VerticalAlignBottomOutlined />
-                    </a-button>
-                </a-tooltip>
-
-                <!-- Import product form -->
-                <a-modal v-model:open="openImportProduct" title="Import product">
-                    <div>
-                        Select product:
-                        <a-select ref="select" v-model:value="selectImportItem" class="w-full">
-                            <a-select-option v-for="item in data" :value="item.productName" class="">
-                                <NuxtImg class="" height="20" width="20" alt="logo" :src="item.imageURL" />
-                                <p class="">{{ item.productName }}</p>
-                            </a-select-option>
-                        </a-select>
-                    </div>
-
-                    <div>
-                        Quantity:
-                        <a-input-number :min="0" :controls="false" class="w-full"></a-input-number>
-                    </div>
-
-
-
-                    <template #footer>
-                        <a-button key="back" @click="openImportProduct = false">Close</a-button>
-                        <a-button key="submit" type="primary" @click="handleImportProduct">Ok</a-button>
-                    </template>
-                </a-modal>
-                <a-input-search v-model:value="searchValue" placeholder="Input product name..." class="w-60"
-                    @search="onSearch" />
+                <!-- Search bar -->
+                <a-input-search v-model:value="searchValue" placeholder="Input product name..."
+                    style="width: 34rem; padding-left: 2rem;" @search="onSearch" />
             </div>
+            
+            <!-- Checkbox group -->
+            <div class="flex flex-grow">
+                <a-checkbox-group class="pl-7 text-medium font-semibold" v-model:value="checkboxValue"
+                    style="width: 100%" :options="checkboxOptions">
+                </a-checkbox-group>
+                <a-button class="w-20 font-semibold" @click="handleCheckboxGroup">Filter</a-button>
+            </div>
+
+
 
 
         </div>
 
-        <a-table :columns="columns" :data-source="data" @change="handleChange">
+        <!-- ----------------------------Body: Product lists-------------------- -->
+        <a-table v-if="!isLoading" :columns="columns" :data-source="productList" @change="handleChange">
             <template #bodyCell="{ column, record }">
-                <template v-if="column.key === 'image'">
-                    <NuxtImg class="ml-6 mt-3" height="80" width="100" alt="logo" :src="record.imageURL" />
+                <template v-if="column.key === 'imageURL'">
+                    <NuxtImg class="ml-6 mt-3" height="80" width="100" alt="noImage"
+                        :src="record.imageURL ? record.imageURL : 'noImage.png'" />
                 </template>
                 <template v-if="column.key === 'price'">
-                    <p>{{ record.price.toLocaleString('vi', { style: 'currency', currency: 'VND' }) }}</p>
+                    <p>{{ record.unitPrice.toLocaleString('vi', { style: 'currency', currency: 'VND' }) }}</p>
+                </template>
+                <template v-if="column.key === 'stock'">
+                    <p>{{ record.quantityInStock }}</p>
                 </template>
                 <template v-if="column.key === 'action'">
-
                     <!-- Edit product -->
                     <a-tooltip placement="top">
                         <template #title>
                             <span>Edit</span>
                         </template>
-                        <a-button class="bg-amber-400 mr-2" @click="handleOpenEditProduct(record)">
+                        <a-button info class="bg-amber-400 mr-2" @click="handleOpenEditProduct(record)">
                             <EditOutlined />
                         </a-button>
                     </a-tooltip>
-
-                    <a-modal v-model:open="openEditProduct" title="Edit product">
-                        <a-form :model="selectProduct" :label-col="labelCol" :wrapper-col="wrapperCol">
-                            <a-form-item label="Product name">
-                                <a-input v-model:value="selectProduct.productName" />
-                            </a-form-item>
-
-                            <a-form-item label="Category">
-                                <a-select ref="select" v-model:value="selectProduct.category" style="width: 120px"
-                                    :options="categoryOptions" @change="">
-                                </a-select>
-                            </a-form-item>
-
-                            <a-form-item label="Price">
-                                <a-input-number class="w-60" v-model:value="selectProduct.price" :controls="false"
-                                    :min="0" />
-                            </a-form-item>
-
-                            <a-form-item label="Image">
-                                <a-upload v-model:file-list="fileList" list-type="picture" :max-count="1">
-                                    <a-button>
-                                        <upload-outlined></upload-outlined>
-                                        Upload
-                                    </a-button>
-                                </a-upload>
-                            </a-form-item>
-
-                        </a-form>
-                        <template #footer>
-                            <a-button key="back" @click="openEditProduct = false">Close</a-button>
-                            <a-button key="submit" type="primary" @click="handleEditProduct">Save</a-button>
-                        </template>
-                    </a-modal>
-
                     <!-- Delete product -->
                     <a-tooltip placement="top">
                         <template #title>
                             <span>Delete</span>
                         </template>
-                        <a-button class="bg-red-500 bg-opacity-80">
+                        <a-button danger @click="handleDeleteProduct(record)">
                             <DeleteOutlined />
                         </a-button>
                     </a-tooltip>
                 </template>
             </template>
         </a-table>
+
+        <!-- -----------------------------Modals-------------------------------- -->
+        <!-- Add product -->
+        <a-modal v-model:open="openAddProduct" title="Add new product" :footer="null">
+            <a-form :model="newProduct" @finish="handleAddProduct">
+                <a-form-item label="Category" name="category">
+                    <a-select ref="select" v-model:value="newProduct.category" :options="categoryOptions" @change="">
+                    </a-select>
+                </a-form-item>
+                <a-form-item label="Product Name" name="productName">
+                    <a-input placeholder="Product name" v-model:value="newProduct.productName"></a-input>
+                </a-form-item>
+
+                <a-form-item label="Unit Price" name="unitPrice">
+                    <a-input placeholder="VND" v-model:value="newProduct.unitPrice"></a-input>
+                </a-form-item>
+
+                <a-form-item label="Image">
+                    <a-upload v-model:file-list="fileList" list-type="picture" :max-count="1">
+                        <a-button>
+                            <upload-outlined></upload-outlined>
+                            Upload
+                        </a-button>
+                    </a-upload>
+                </a-form-item>
+                <a-form-item class="flex justify-end mr-6" :wrapper-col="{ offset: 8, span: 16 }">
+                    <a-button type="primary" html-type="submit">Submit</a-button>
+                </a-form-item>
+            </a-form>
+
+        </a-modal>
+        <!-- Edit product -->
+        <a-modal v-model:open="openEditProduct" title="Edit product">
+            <a-form :model="selectProduct">
+                <a-form-item label="Product name">
+                    <a-input v-model:value="selectProduct.productName" />
+                </a-form-item>
+
+                <a-form-item label="Category">
+                    <a-select ref="select" v-model:value="selectProduct.category" style="width: 120px"
+                        :options="categoryOptions" @change="">
+                    </a-select>
+                </a-form-item>
+
+                <a-form-item label="Price">
+                    <a-input-number class="w-60" v-model:value="selectProduct.unitPrice" :controls="false" :min="0" />
+                </a-form-item>
+
+
+                <a-form-item label="Image">
+                    <a-upload v-model:file-list="fileList" list-type="picture" :max-count="1">
+                        <a-button>
+                            <upload-outlined></upload-outlined>
+                            Upload
+                        </a-button>
+                    </a-upload>
+                </a-form-item>
+
+            </a-form>
+            <template #footer>
+                <a-button key="back" @click="openEditProduct = false">Close</a-button>
+                <a-button key="submit" type="primary" @click="handleEditProduct">Save</a-button>
+            </template>
+        </a-modal>
     </div>
 
 </template>
 <script lang="ts">
-import type { UnwrapRef } from 'vue';
-import { reactive, toRaw } from 'vue';
 import type { UploadProps } from 'ant-design-vue';
-interface FormState {
+import axios from 'axios';
+
+interface Product {
     productName: string;
     category: string;
     stock: number;
-    price: number;
+    unitPrice: number;
     imageURL: string;
 }
 
 export default {
     setup() {
-        const formState: UnwrapRef<FormState> = reactive({
-            productName: '',
-            category: '',
-            stock: 0,
-            price: 0,
-            imageURL: ''
-        });
-        const onSubmit = () => {
-            console.log('submit!', toRaw(formState));
-        };
-        const labelCol = { style: { width: '150px' } };
-        const wrapperCol = { span: 14 };
-        const fileList = ref<UploadProps['fileList']>([]);
-        const handleSelectImportItem = (value: string) => {
-            console.log(`selected ${value}`);
-        };
-        // expose the ref to the template
+        const fileList = ref<UploadProps['fileList']>([]);   
         return {
-            formState, onSubmit, labelCol, wrapperCol, fileList, handleSelectImportItem
+            fileList,
         }
     },
     data() {
         return {
-            filteredInfo: '',
             searchValue: '',
             openAddProduct: false,
-            openImportProduct: false,
             openEditProduct: false,
+            checkboxValue: [],
+            checkboxOptions: [
+                { label: 'Laptop', value: 'Laptop' },
+                { label: 'Watch', value: 'Watch' },
+                { label: 'TV', value: 'TV' },
+                { label: 'Accesories', value: 'Accesories' },
+                { label: 'Headphone', value: 'Headphone' },
+
+            ],
             selectProduct: {
-                productName: '123',
+                id: null,
+                productName: 'Example product',
                 category: 'Laptop',
                 stock: 24,
-                price: 9999,
+                unitPrice: 9999,
                 imageURL: ''
             },
-            value1: '',
-            selectImportItem: '',
+            newProduct: reactive<Product>({
+                productName: '',
+                category: '',
+                stock: 0,
+                unitPrice: 0,
+                imageURL: ''
+            }),
             categoryOptions: [
                 {
                     value: 'laptop',
@@ -219,7 +194,7 @@ export default {
             ],
             columns: [
                 {
-                    key: 'image'
+                    key: 'imageURL'
                 },
                 {
                     title: 'Product',
@@ -240,7 +215,7 @@ export default {
                     title: 'Price',
                     key: 'price',
                     dataIndex: 'price',
-                    sorter: (a: any, b: any) => a.price - b.price,
+                    sorter: (a: any, b: any) => a.unitPrice - b.unitPrice,
                 },
                 {
                     title: 'Stock',
@@ -252,7 +227,6 @@ export default {
                     key: 'action',
                 },
             ],
-
             data: [
                 {
                     key: '1',
@@ -287,26 +261,107 @@ export default {
                     stock: 105,
                 },
             ],
+            productList: [],
+            isLoading: true,
         }
     },
+
     methods: {
         onSearch(value: string) {
             console.log(value)
         },
+        async handleCheckboxGroup() {
+            let bearerToken = localStorage.getItem("user_token");
+            await axios.post('http://localhost:8000/api/products/getProductByCategory',
+                { category: this.checkboxValue },
+                {
+                    withCredentials: true,
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${bearerToken}`
+                    },
+                })
+                .then(response => {
+                    // change products list 
+                    this.productList = response.data.products;
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
 
-        handleAddProduct() {
+                })
+            this.isLoading = false;
 
         },
-        handleImportProduct() {
+
+        async handleAddProduct(values: any) {
+            try {
+                await axios.post('http://localhost:8000/api/products', {
+                    productName: values.productName,
+                    category: values.category,
+                    unitPrice: values.unitPrice,
+                    // imageURL: '',
+                })
+                this.getProductList();
+                this.openAddProduct = false;
+            } catch (error) {
+                console.log(error)
+            }
+        },
+        async handleDeleteProduct(product: any) {
+            if (confirm("Do you Want to delete these items?") == true) {
+                try {
+                    let bearerToken = localStorage.getItem("user_token");
+                    await axios.delete(`http://localhost:8000/api/products/${product.id}`,
+                        {
+                            withCredentials: true,
+                            headers: {
+                                "Content-Type": "application/json",
+                                "Authorization": `Bearer ${bearerToken}`
+                            },
+                        }
+                    )
+                    // get new list
+                    this.getProductList();
+                } catch (error) {
+                    console.log(error)
+                }
+            } else {
+                console.log("do nothing")
+            }
 
         },
+
         handleOpenEditProduct(product: any) {
             if (product != null) {
                 this.selectProduct = product
                 this.openEditProduct = true;
             }
         },
-        handleEditProduct() { },
+        async handleEditProduct() {
+            try {
+                let bearerToken = localStorage.getItem("user_token");
+                await axios.put(`http://localhost:8000/api/products/${this.selectProduct.id}`,
+                    {
+                        productName: this.selectProduct.productName,
+                        category: this.selectProduct.category,
+                        unitPrice: this.selectProduct.unitPrice,
+                    },
+                    {
+                        withCredentials: true,
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Authorization": `Bearer ${bearerToken}`
+                        },
+                    }
+                )
+                // get new list
+                this.openEditProduct = false;
+                this.getProductList();
+            } catch (error) {
+                console.log(error)
+            }
+
+        },
         handleChange(pagination: any, filters: any, sorter: any) {
             console.log({
                 pagination: pagination,
@@ -314,21 +369,32 @@ export default {
                 sorter: sorter
             })
         },
-        handleViewProfile(nameCustomer: string) {
-            console.log("onclick View Profile of customerName: ", nameCustomer)
-        },
+        async getProductList() {
+            let bearerToken = localStorage.getItem("user_token");
+            await axios.get('http://localhost:8000/api/products',
+                {
+                    withCredentials: true,
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${bearerToken}`
+                    },
+                }
+            )
+                .then(response => {
+                    this.productList = response.data.data;
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
 
+                })
+            this.isLoading = false
+        }
     },
-    // mounted() {
-    //     axios.get('http://localhost:8000/api/customers')
-    //         .then(response => {
-    //             this.items = response.data;
-    //         })
-    //         .catch(error => {
-    //             console.error('Error fetching data:', error);
-    //         });
-    // }
-};
+    created() {
+        this.getProductList();
+    },
+}
+
 
 
 </script>

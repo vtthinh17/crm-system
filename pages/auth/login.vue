@@ -52,17 +52,14 @@ const onFinish = async (values: any) => {
           password: values.password
         }, { withCredentials: true })
         .then(response => {
-          console.log("response: ",response)
-          const tk = (response.data).slice(1,)
-          localStorage.setItem('user_token', tk);
-        })
+          localStorage.setItem('user_token', response.data.token);
+          localStorage.setItem('userInfo', response.data.user.email);
 
+        })
         navigateTo('/')
-        
     } catch (error) {
       console.log(error);
     }
-  // console.log('Success:', values);
 };
 
 const onFinishFailed = (errorInfo: any) => {

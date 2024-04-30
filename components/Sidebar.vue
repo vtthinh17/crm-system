@@ -26,31 +26,31 @@ export default {
                     href: "/",
                     // iconName: 'AppstoreOutlined'
                 },
-                {
-                    label: "Customers",
-                    href: "/customers",
-                    // iconName: 'AppstoreOutlined'
-                },
+                // {
+                //     label: "Customers",
+                //     href: "/customers",
+                //     // iconName: 'AppstoreOutlined'
+                // },
                 {
                     label: "Products",
                     href: "/products",
                     // iconName: 'AppstoreOutlined'
                 },
-                {
-                    label: "Orders",
-                    href: "/orders",
-                    // iconName: 'AppstoreOutlined'
-                },
-                {
-                    label: "Report",
-                    href: "/report",
-                    // iconName: 'AppstoreOutlined'
-                },
-                {
-                    label: "Settings",
-                    href: "/settings",
-                    // iconName: 'AppstoreOutlined'
-                },
+                // {
+                //     label: "Orders",
+                //     href: "/orders",
+                //     // iconName: 'AppstoreOutlined'
+                // },
+                // {
+                //     label: "Report",
+                //     href: "/report",
+                //     // iconName: 'AppstoreOutlined'
+                // },
+                // {
+                //     label: "Settings",
+                //     href: "/settings",
+                //     // iconName: 'AppstoreOutlined'
+                // },
             ],
         }
 
