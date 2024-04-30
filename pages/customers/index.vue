@@ -1,5 +1,6 @@
 <template>
-    <a-table :columns="columns" :data-source="data" @change="handleChange">
+    {{ console.log(items) }}
+    <!-- <a-table :columns="columns" :data-source="data" @change="handleChange">
         <template #bodyCell="{ column, record }">
             <template v-if="column.key === 'action'">
                 <a-dropdown>
@@ -26,10 +27,11 @@
                 </span>
             </template>
         </template>
-    </a-table>
+    </a-table> -->
 </template>
 <script lang="ts">
 import { SmileOutlined, DownOutlined } from '@ant-design/icons-vue';
+import axios from 'axios';
 import { computed, ref } from 'vue';
 
 export default {
@@ -94,6 +96,7 @@ export default {
                     phone: '0622 997 3213',
                 },
             ],
+            items:null,
         }
     },
     methods: {
@@ -108,15 +111,15 @@ export default {
             console.log("onclick View Profile of customerName: ",nameCustomer)
         }
     },
-    // mounted() {
-    //     axios.get('http://localhost:8000/api/customers')
-    //         .then(response => {
-    //             this.items = response.data;
-    //         })
-    //         .catch(error => {
-    //             console.error('Error fetching data:', error);
-    //         });
-    // }
+    mounted() {
+        axios.get('http://localhost:8000/api/customers')
+            .then(response => {
+                this.items = response.data;
+            })
+            .catch(error => {
+                console.error('Error fetching data:', error);
+            });
+    }
 };
 
 
